@@ -1,0 +1,23 @@
+# Render Blueprint — one service that builds the frontend + backend and serves
+# both from a single URL. Deploy: Render Dashboard -> New -> Blueprint -> pick
+# the repo. See DEPLOY.md for the full walkthrough.
+services:
+  - type: web
+    name: quorum-polling
+    runtime: node
+    plan: free
+    buildCommand: "cd frontend && npm install --legacy-peer-deps && npm run build && cd ../backend && npm install && npm run build"
+    startCommand: "cd backend && node dist/index.js"
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Backend MQTT (publishes vote/status events).
+      - key: MQTT_URL
+        value: wss://broker.emqx.io:8084/mqtt
+      - key: MQTT_TOPIC_PREFIX
+        value: quorum/solisjuan/polling
+      # Frontend MQTT (baked into the browser bundle at build time by Vite).
+      - key: VITE_MQTT_URL
+        value: wss://broker.emqx.io:8084/mqtt
+      - key: VITE_MQTT_TOPIC_PREFIX
+        value: quorum/solisjuan/polling
