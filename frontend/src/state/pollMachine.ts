@@ -3,15 +3,13 @@ import { createMachine } from 'xstate';
 /**
  * Poll lifecycle state chart — frontend mirror of the backend machine.
  *
- * States:  draft | open | closed | results
- * Events:  PUBLISH | CLOSE | SHOW_RESULTS | RESET | SYNC
+ * States:  draft | open | closed
+ * Events:  PUBLISH | CLOSE | SYNC
  * Guards:  hasOptions — can't publish a poll with fewer than 2 options
  * Actions: console.log on every entry (wired to UI transitions)
  *
  *   draft ---PUBLISH (guard: hasOptions)---> open
  *   open  ---CLOSE--------------------------> closed
- *   closed---SHOW_RESULTS------------------> results
- *   results--RESET-------------------------> draft
  *
  * SYNC lets the UI snap the machine to a status pushed from the backend
  * over the Publish-Subscribe Channel, so two clients stay in agreement.
@@ -27,13 +25,11 @@ export interface PollInput {
   optionCount: number;
 }
 
-export type PollStatus = 'draft' | 'open' | 'closed' | 'results';
+export type PollStatus = 'draft' | 'open' | 'closed';
 
 export type PollEvent =
   | { type: 'PUBLISH' }
   | { type: 'CLOSE' }
-  | { type: 'SHOW_RESULTS' }
-  | { type: 'RESET' }
   | { type: 'SYNC'; status: PollStatus };
 
 export const pollMachine = createMachine({
@@ -50,7 +46,6 @@ export const pollMachine = createMachine({
       { target: '.draft', guard: ({ event }) => event.status === 'draft' },
       { target: '.open', guard: ({ event }) => event.status === 'open' },
       { target: '.closed', guard: ({ event }) => event.status === 'closed' },
-      { target: '.results', guard: ({ event }) => event.status === 'results' },
     ],
   },
   states: {
@@ -64,11 +59,6 @@ export const pollMachine = createMachine({
     },
     closed: {
       entry: () => console.log('[poll] closed'),
-      on: { SHOW_RESULTS: 'results' },
-    },
-    results: {
-      entry: () => console.log('[poll] results'),
-      on: { RESET: 'draft' },
     },
   },
 });

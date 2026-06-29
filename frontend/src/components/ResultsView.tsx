@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react';
 import type { Poll } from '../App';
-import type { PollStatus } from '../state/pollMachine';
 import { subscribeToPoll } from '../mqtt/client';
 
 interface Props {
   poll: Poll;
-  status: PollStatus;        // 'closed' | 'results' here
   onLeave: () => void;
 }
 
@@ -14,9 +12,8 @@ interface Tally {
   total: number;
 }
 
-export default function ResultsView({ poll, status, onLeave }: Props) {
+export default function ResultsView({ poll, onLeave }: Props) {
   const [tally, setTally] = useState<Tally>({ counts: poll.options.map(() => 0), total: 0 });
-  const [busy, setBusy]   = useState(false);
 
   useEffect(() => {
     // Rebuild the final tally from the audit trail (REST), then keep listening
@@ -35,17 +32,11 @@ export default function ResultsView({ poll, status, onLeave }: Props) {
     return unsub;
   }, [poll.id, poll.options]);
 
-  async function send(path: string) {
-    setBusy(true);
-    await fetch(`/api/polls/${poll.id}/${path}`, { method: 'POST' });
-    setBusy(false);
-  }
-
   const winner = tally.total > 0 ? tally.counts.indexOf(Math.max(...tally.counts)) : -1;
 
   return (
     <div className="card">
-      <span className="pill pill-closed">{status === 'results' ? 'Final results' : 'Closed'}</span>
+      <span className="pill pill-closed">Final results</span>
       <h2 className="poll-question" style={{ marginTop: '0.7rem' }}>{poll.question}</h2>
       <p className="stat-total">Total votes <b>{tally.total}</b></p>
 
@@ -66,19 +57,7 @@ export default function ResultsView({ poll, status, onLeave }: Props) {
         );
       })}
 
-      {/* Host controls — each fires a state-chart transition that the backend
-          broadcasts to every client. */}
       <div className="actions">
-        {status === 'closed' && (
-          <button className="btn btn-primary" onClick={() => send('results')} disabled={busy}>
-            Publish final results
-          </button>
-        )}
-        {status === 'results' && (
-          <button className="btn btn-secondary" onClick={() => send('reset')} disabled={busy}>
-            Reset to draft
-          </button>
-        )}
         <span className="spacer" />
         <button className="btn btn-ghost" onClick={onLeave}>New poll</button>
       </div>

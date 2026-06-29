@@ -33,23 +33,21 @@ current counts the instant it subscribes instead of a blank panel. `status`
 
 ```
 draft ---PUBLISH [guard: optionCount > 1]---> open
-open  ---CLOSE------------------------------> closed
-closed---SHOW_RESULTS-----------------------> results
-results--RESET------------------------------> draft
+open  ---CLOSE------------------------------> closed (terminal)
 ```
 
 | Term | Value |
 |---|---|
-| States | `draft`, `open`, `closed`, `results` |
-| Events | `PUBLISH`, `CLOSE`, `SHOW_RESULTS`, `RESET` (+ `SYNC` on the frontend mirror) |
+| States | `draft`, `open`, `closed` |
+| Events | `PUBLISH`, `CLOSE` (+ `SYNC` on the frontend mirror) |
 | Guards | `optionCount > 1` — prevents publishing a poll with fewer than 2 options |
 | Actions | Entry logging on every state; `updateStatus()` writes to `poll_status_log` |
 
-Every transition is reachable from the UI: a poll is opened, closed, published to
-results, and reset, each firing the matching event. Votes are only accepted in the
-`open` state (the guard on `POST /polls/:id/vote`). The frontend machine `SYNC`s to
-the status the backend broadcasts, so a host closing the poll moves every connected
-client to the results view together.
+Every transition is reachable from the UI: a poll is opened (`PUBLISH`) then closed
+(`CLOSE`). Votes are only accepted in the `open` state (the guard on
+`POST /polls/:id/vote`). The frontend machine `SYNC`s to the status the backend
+broadcasts, so a host closing the poll moves every connected client to the results
+view together.
 
 ## Audit Trails (Perfect Framework)
 

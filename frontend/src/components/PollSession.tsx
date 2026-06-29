@@ -41,8 +41,8 @@ export default function PollSession({ poll, onLeave }: Props) {
 
   const status = state.value as PollStatus;
 
-  if (status === 'closed' || status === 'results') {
-    return <ResultsView poll={poll} status={status} onLeave={onLeave} />;
+  if (status === 'closed') {
+    return <ResultsView poll={poll} onLeave={onLeave} />;
   }
   return <VotingView poll={poll} status={status} onLeave={onLeave} />;
 }

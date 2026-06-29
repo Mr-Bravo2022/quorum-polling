@@ -3,15 +3,13 @@ import { createMachine } from 'xstate';
 /**
  * Poll lifecycle state chart (GoF State / Perfect Framework workflow).
  *
- * States:     draft | open | closed | results
- * Events:     PUBLISH | CLOSE | SHOW_RESULTS | RESET
+ * States:     draft | open | closed
+ * Events:     PUBLISH | CLOSE
  * Guards:     hasOptions — can't publish a poll with fewer than 2 options
  * Actions:    logged on entry to each state (audit trail hook point)
  *
  *   draft ---PUBLISH (guard: hasOptions)---> open
- *   open  ---CLOSE--------------------------> closed
- *   closed---SHOW_RESULTS------------------> results
- *   results--RESET-------------------------> draft
+ *   open  ---CLOSE--------------------------> closed (final)
  */
 
 export interface PollContext {
@@ -26,9 +24,7 @@ export interface PollInput {
 
 export type PollEvent =
   | { type: 'PUBLISH' }
-  | { type: 'CLOSE' }
-  | { type: 'SHOW_RESULTS' }
-  | { type: 'RESET' };
+  | { type: 'CLOSE' };
 
 export const pollMachine = createMachine({
   id: 'poll',
@@ -55,16 +51,8 @@ export const pollMachine = createMachine({
       },
     },
     closed: {
-      entry: () => console.log('[poll] entered closed — no more votes'),
-      on: {
-        SHOW_RESULTS: 'results',
-      },
-    },
-    results: {
-      entry: () => console.log('[poll] entered results'),
-      on: {
-        RESET: 'draft',
-      },
+      // Terminal state — no outgoing transitions; voting has ended.
+      entry: () => console.log('[poll] entered closed — voting ended'),
     },
   },
 });

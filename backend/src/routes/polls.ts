@@ -102,27 +102,9 @@ router.post('/polls/:id/vote', async (ctx) => {
   ctx.body = getTally(pollId);
 });
 
-// POST /api/polls/:id/close — transition open -> closed.
+// POST /api/polls/:id/close — transition open -> closed (final).
 router.post('/polls/:id/close', async (ctx) => {
   await transition(ctx, 'CLOSE');
-});
-
-// POST /api/polls/:id/results — transition closed -> results.
-router.post('/polls/:id/results', async (ctx) => {
-  await transition(ctx, 'SHOW_RESULTS');
-});
-
-// POST /api/polls/:id/reset — transition results -> draft (start a fresh round).
-router.post('/polls/:id/reset', async (ctx) => {
-  const pollId = ctx.params.id;
-  const ok = await transition(ctx, 'RESET');
-  if (!ok) return;
-  // Reset the live tally for the new round; the audit trail keeps prior votes.
-  const tally = getTally(pollId);
-  if (tally) {
-    restoreTally(pollId, tally.counts.map(() => 0));
-    publish(pollId, 'results', getTally(pollId), { retain: true });
-  }
 });
 
 // GET /api/polls/:id/results — point-in-time tally rebuilt from the audit trail.
@@ -173,10 +155,9 @@ function updateStatus(pollId: string, status: string): void {
 // Map a persisted status to the event sequence that reaches it from `draft`.
 function statusToEvents(status: string): PollEvent['type'][] {
   switch (status) {
-    case 'open':    return ['PUBLISH'];
-    case 'closed':  return ['PUBLISH', 'CLOSE'];
-    case 'results': return ['PUBLISH', 'CLOSE', 'SHOW_RESULTS'];
-    default:        return [];
+    case 'open':   return ['PUBLISH'];
+    case 'closed': return ['PUBLISH', 'CLOSE'];
+    default:       return [];
   }
 }
 
