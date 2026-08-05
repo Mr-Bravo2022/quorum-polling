@@ -1,0 +1,7 @@
+**/node_modules
+**/dist
+**/*.db
+**/.env
+**/*.tsbuildinfo
+backend/mqtt-probe.js
+.git
